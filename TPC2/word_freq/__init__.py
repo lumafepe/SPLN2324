@@ -9,8 +9,14 @@ SYNOPSIS
     option: 
         -m 20 - Show the 20 most common
         -n: Order alfabetically
+        -i: Ignore case sensitivity
+        -l: Language (select language code) 
+        -c: 
 
 DESCRIPTIONS
+
+FILES:
+
 
 '''
 
@@ -31,7 +37,7 @@ def printWordsList(list):
         print(f"{numb}  {word}")
         
     
-def values_dict(c:Counter):
+def values_dict(c:Counter,flag=False):
     #returns the expected number of times each word appears
     total = c.total()
     print(total)
@@ -40,17 +46,24 @@ def values_dict(c:Counter):
         for line in f:
             line=line.strip()
             value,expectedPerM = line.split("   ")
+            if flag:
+                value=value.lower()
             if c[value]!=0:
                 stdvals[value]=(total*float(expectedPerM)) / 1000000
     return stdvals
     
-    
-def idfk(c:Counter):
-    expect = Counter(values_dict(c))
+
+
+def compara_counters(c:Counter,flag=False):
+    expect = Counter(values_dict(c,flag))
     d=dict()
-    for item in set(c):
-        if expect[item]!=0:
-            d[item]=abs((c[item]-expect[item])/expect[item])*100
+    pattern = re.compile(r'\w')
+    for item in c:
+        if re.search(pattern,item):
+            if expect[item]!=0:
+                d[item] = ((c[item]-expect[item])/expect[item])*100
+            else:
+                d[item] = ((c[item]-0.0397)/0.0397)*100 #TODO::FIX
     return Counter(d)
         
 
@@ -61,11 +74,13 @@ def main():
         wordsList = tokeniza(txt)
         if "-n" in cl.opt:
             wordsList.sort()
+        flag = False
         if "-i" in cl.opt:
             wordsList = [palavra.lower() for palavra in wordsList]
+            flag=True
         c = Counter(wordsList)
         if "-c" in cl.opt:
-            c = idfk(c)
+            c = compara_counters(c,flag)
         if "-m" in cl.opt:
             printWordsList(c.most_common(int(cl.opt.get("-m"))))
         else:
